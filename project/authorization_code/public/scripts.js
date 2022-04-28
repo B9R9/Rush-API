@@ -12,4 +12,3 @@ function typewriter(word, index){
 setTimeout(() => {
     typewriter(message_1, 0)
 }, 500);
-

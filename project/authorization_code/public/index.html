@@ -1,8 +1,9 @@
 <!doctype html>
 <html>
   <head>
-    <title>Example of the Authorization Code flow with Spotify</title>
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <title>Hive Rush API Project</title>
+    <!-- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"> -->
+    <link rel="stylesheet" href="styles.css" />
     <style type="text/css">
       #login, #loggedin {
         display: none;
@@ -13,14 +14,25 @@
         white-space: nowrap;
         width: 500px;
       }
-    </style>
+      </style>
   </head>
+  <header>
+    <script id="oauth-template" type="text/x-handlebars-template">
+      <h2>oAuth info</h2>
+      <dl class="dl-horizontal">
+        <dt>Access token</dt><dd class="text-overflow">{{access_token}}</dd>
+        <dt>Refresh token</dt><dd class="text-overflow">{{refresh_token}}</dd>
+      </dl>
+    </script>
+  </header>
 
   <body>
     <div class="container">
       <div id="login">
-        <h1>This is an example of the Authorization Code flow</h1>
-        <a href="/login" class="btn btn-primary">Log in with Spotify</a>
+        <h1 id="welcome"></h1>
+        <div id="button">
+        <a id="entrance" href="/login" class="btn btn-primary">Log in with Spotify</a>
+        </div>
       </div>
       <div id="loggedin">
         <div id="user-profile">
@@ -32,8 +44,8 @@
     </div>
 
     <script id="user-profile-template" type="text/x-handlebars-template">
-      <h1>Logged in as {{display_name}}</h1>
-      <div class="media">
+      <h1 class="text" >Here the list of your favourite album</h1>
+      <!-- <div class="media">
         <div class="pull-left">
           <img class="media-object" width="150" src="{{images.0.url}}" />
         </div>
@@ -47,20 +59,13 @@
             <dt>Profile Image</dt><dd class="clearfix"><a href="{{images.0.url}}">{{images.0.url}}</a></dd>
             <dt>Country</dt><dd>{{country}}</dd>
           </dl>
-        </div>
+        </div> -->
       </div>
-    </script>
-
-    <script id="oauth-template" type="text/x-handlebars-template">
-      <h2>oAuth info</h2>
-      <dl class="dl-horizontal">
-        <dt>Access token</dt><dd class="text-overflow">{{access_token}}</dd>
-        <dt>Refresh token</dt><dd class="text-overflow">{{refresh_token}}</dd>
-      </dl>
     </script>
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="./scripts.js"></script>
     <script>
       (function() {
 
@@ -103,12 +108,90 @@
             });
 
             $.ajax({
-                url: 'https://api.spotify.com/v1/me',
+                url: 'https://api.spotify.com/v1/me/albums',
                 headers: {
                   'Authorization': 'Bearer ' + access_token
                 },
                 success: function(response) {
                   userProfilePlaceholder.innerHTML = userProfileTemplate(response);
+
+                  let i = 0;
+					let j = 0;
+
+					while (i < response.total && i < response.limit)
+					{
+						j = 0;
+						/*	create div for each album	*/
+						const rowElement = document.createElement('div');
+						rowElement.setAttribute('class', 'album ' + i);
+					
+						/*	Image display on album*/
+						const imageElement = document.createElement('div');
+						imageElement.setAttribute('class', 'image');
+						const imageEle = document.createElement('img');
+						imageEle.setAttribute('class', 'media-object');
+            
+						// imageEle.setAttribute('width', '200');
+						imageEle.setAttribute('src', response.items[i].album.images[0].url);
+						imageElement.append(imageEle);
+						rowElement.append(imageElement);
+
+            const textPart = document.createElement('div')
+            textPart.setAttribute('class', 'text-part');
+            rowElement.append(textPart);
+
+						/*	Title of the album made into html	*/
+						const titleLabel = document.createElement('div');
+						titleLabel.setAttribute('class', 'title');
+						const title = document.createElement('ul');
+						titleLabel.textContent = "Title: ";
+						title.textContent = response.items[i].album.name;
+						titleLabel.append(title);
+						// rowElement.append(titleLabel);
+            textPart.append(titleLabel);
+
+						/*	artists on the album made into html	*/
+						const artistElementLabel = document.createElement('div');
+						artistElementLabel.setAttribute('class', 'artist');
+						artistElementLabel.textContent = "Artist: ";
+						// rowElement.append(artistElementLabel);
+            textPart.append(artistElementLabel);
+						while (j < response.items[i].album.artists.length)
+						{
+							const artistElement = document.createElement('ul');
+							artistElement.textContent = response.items[i].album.artists[j].name;
+							artistElementLabel.appendChild(artistElement);
+							j++;
+						}
+						/*	release date made into html	*/
+						const releaseDateElement = document.createElement('div');
+						releaseDateElement.setAttribute('class', 'date');
+						const releaseDate = document.createElement('ul');
+						releaseDateElement.textContent = "Release date: ";
+						// rowElement.append(releaseDateElement);
+            textPart.append(releaseDateElement);
+						releaseDate.textContent = response.items[i].album.release_date;
+						releaseDateElement.append(releaseDate);
+						
+						/*	tracks on album listed made into html	*/
+						const trackElementLabel = document.createElement('div');
+						trackElementLabel.setAttribute('class', 'tracks');
+						trackElementLabel.textContent = "Tracks: ";
+						// rowElement.append(trackElementLabel);
+            textPart.append(trackElementLabel);
+						j = 0;
+						while (j < response.items[i].album.tracks.total)
+						{
+							const trackElement = document.createElement('ul');
+							trackElement.textContent = response.items[i].album.tracks.items[j].name;
+							trackElementLabel.append(trackElement);
+							j++;
+						}
+
+						/*	prints it to the html page	*/
+						userProfilePlaceholder.append(rowElement);
+						i++;
+					}
 
                   $('#login').hide();
                   $('#loggedin').show();
@@ -139,4 +222,3 @@
     </script>
   </body>
 </html>
-
